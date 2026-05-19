@@ -436,4 +436,4 @@ const styles = StyleSheet.create({
     padding:20,
     borderRadius:10
   }
-});
+});// Added Update, Delete & Borrow features by careljajt-maker
