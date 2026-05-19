@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   FlatList,
   StyleSheet,
+  Modal,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -23,6 +24,7 @@ import {
   set,
   update,
   onValue,
+  remove,
 } from "firebase/database";
 
 
@@ -66,6 +68,10 @@ const db_returnItem = (id) =>
 
 const db_deleteItem = (id) =>
   update(ref(db, `items/${id}`), { deleted: true });
+
+// --- NEW: Update item function ---
+const db_updateItem = (id, newName, newDesc) =>
+  update(ref(db, `items/${id}`), { name: newName, description: newDesc });
 
 
 // ================= LIVE DATA =================
@@ -114,7 +120,21 @@ export default function App() {
   const [itemName, setItemName] = useState("");
   const [itemDesc, setItemDesc] = useState("");
 
+  // --- NEW: State for update modal ---
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [currentItem, setCurrentItem] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+
   const items = useItems();
+
+  // --- NEW: Open edit modal with item data ---
+  const openEdit = (item) => {
+    setCurrentItem(item);
+    setEditName(item.name);
+    setEditDesc(item.description);
+    setEditModalVisible(true);
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F3F4F6" }}>
@@ -217,6 +237,44 @@ export default function App() {
           </TouchableOpacity>
         </View>
 
+        {/* --- NEW: EDIT ITEM MODAL --- */}
+        <Modal visible={editModalVisible} animationType="slide" transparent>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.sectionTitle}>Edit Item</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="New Name"
+                value={editName}
+                onChangeText={setEditName}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="New Description"
+                value={editDesc}
+                onChangeText={setEditDesc}
+              />
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={async () => {
+                  if (!editName || !editDesc) return alert("⚠️ Fill all fields");
+                  await db_updateItem(currentItem.id, editName, editDesc);
+                  setEditModalVisible(false);
+                  alert("✅ Item updated");
+                }}
+              >
+                <Text style={styles.buttonText}>Save Changes</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.primaryButton, {backgroundColor: '#9CA3AF', marginTop:8}]}
+                onPress={() => setEditModalVisible(false)}
+              >
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
         {/* AVAILABLE ITEMS */}
         <Text style={styles.listTitle}>Available Items</Text>
 
@@ -263,13 +321,25 @@ export default function App() {
                   </TouchableOpacity>
                 )}
 
+                {/* --- NEW: UPDATE & DELETE BUTTONS FOR OWNER --- */}
                 {isOwner && (
-                  <TouchableOpacity
-                    style={styles.returnBtn}
-                    onPress={() => db_deleteItem(item.id)}
-                  >
-                    <Text style={styles.buttonText}>Delete</Text>
-                  </TouchableOpacity>
+                  <View style={{flexDirection:'row', gap:8, marginTop:8}}>
+                    <TouchableOpacity
+                      style={[styles.borrowBtn, {flex:1, backgroundColor: '#F59E0B'}]}
+                      onPress={() => openEdit(item)}
+                    >
+                      <Text style={styles.buttonText}>Update</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.returnBtn, {flex:1}]}
+                      onPress={() => {
+                        db_deleteItem(item.id);
+                        alert("🗑️ Item deleted");
+                      }}
+                    >
+                      <Text style={styles.buttonText}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
                 )}
 
               </View>
@@ -353,4 +423,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: 5,
   },
+
+  // --- NEW: Modal styles ---
+  modalContainer: {
+    flex:1,
+    backgroundColor:'rgba(0,0,0,0.5)',
+    justifyContent:'center',
+    padding:20
+  },
+  modalContent: {
+    backgroundColor:'#fff',
+    padding:20,
+    borderRadius:10
+  }
 });
