@@ -436,5 +436,4 @@ const styles = StyleSheet.create({
     padding:20,
     borderRadius:10
   }
-});✅ CONTRIBUTED BY CARELAJT-MAKER: Added Update & Delete features
-✅ CONTRIBUTED BY CARELAJT-MAKER: Added Update & Delete features
+});
